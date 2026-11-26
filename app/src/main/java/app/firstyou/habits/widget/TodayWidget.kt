@@ -10,10 +10,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
+import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
@@ -29,6 +33,7 @@ import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
@@ -36,10 +41,10 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import app.firstyou.habits.HabitsApp
 import app.firstyou.habits.MainActivity
+import app.firstyou.habits.data.HabitKind
 import app.firstyou.habits.data.widgetRows
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
@@ -47,29 +52,32 @@ private val HabitIdKey = ActionParameters.Key<Long>("habitId")
 
 class TodayWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
+        val style = WidgetStyles.list(context, appWidgetId)
         val repository = (context.applicationContext as HabitsApp).container.repository
         val initialHabits = withContext(Dispatchers.IO) { repository.observeActive().first() }
-        val initialCompletions = withContext(Dispatchers.IO) { repository.observeCompletions().first() }
+        val initialEntries = withContext(Dispatchers.IO) { repository.observeEntries().first() }
         provideContent {
-            val tick by refresh.collectAsState(initial = 0)
+            val tick by WidgetRefresh.tick.collectAsState(initial = 0)
             val habits by repository.observeActive().collectAsState(initial = initialHabits)
-            val completions by repository.observeCompletions().collectAsState(initial = initialCompletions)
-            val today = remember(tick, habits, completions) { LocalDate.now() }
-            TodayWidgetContent(context, widgetRows(habits, completions, today))
-        }
-    }
-
-    companion object {
-        private val refresh = MutableStateFlow(0)
-
-        fun bump() {
-            refresh.value += 1
+            val entries by repository.observeEntries().collectAsState(initial = initialEntries)
+            val today = remember(tick, habits, entries) { LocalDate.now() }
+            val rows = remember(tick, habits, entries, style, today) {
+                widgetRows(habits, entries, today, limit = style.maxRows, todayOnly = style.todayOnly)
+            }
+            val metrics = LocalContext.current.resources.displayMetrics
+            ListWidgetContent(LocalContext.current, appWidgetId, style, rows, metrics.density, metrics.densityDpi)
         }
     }
 }
 
 class TodayWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = TodayWidget()
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        WidgetStyles.clear(context, appWidgetIds)
+        super.onDeleted(context, appWidgetIds)
+    }
 }
 
 class ToggleTodayAction : ActionCallback {
@@ -80,52 +88,77 @@ class ToggleTodayAction : ActionCallback {
     ) {
         val habitId = parameters[HabitIdKey] ?: return
         val repository = (context.applicationContext as HabitsApp).container.repository
+        val habit = repository.get(habitId) ?: return
         val today = LocalDate.now()
-        val done = today in repository.completedDays(habitId)
-        repository.setDone(habitId, today, !done)
+        val value = repository.entry(habitId, today)
+        if (habit.countsAsDone(value)) {
+            repository.setEntry(habitId, today, null)
+        } else if (habit.kind == HabitKind.MEASURABLE) {
+            repository.setEntry(habitId, today, habit.target ?: 1.0)
+        } else {
+            repository.setEntry(habitId, today, 1.0)
+        }
     }
 }
 
 suspend fun refreshTodayWidgets(context: Context) {
-    TodayWidget.bump()
+    WidgetRefresh.bump()
     TodayWidget().updateAll(context)
+    ChartWidget().updateAll(context)
 }
 
 @androidx.compose.runtime.Composable
-private fun TodayWidgetContent(context: Context, rows: List<app.firstyou.habits.data.WidgetRow>) {
+private fun ListWidgetContent(
+    context: Context,
+    appWidgetId: Int,
+    style: ListWidgetStyle,
+    rows: List<app.firstyou.habits.data.WidgetRow>,
+    density: Float,
+    densityDpi: Int,
+) {
+    val textColor = ColorProvider(Color(style.text))
+    val weight = if (style.bold) FontWeight.Bold else FontWeight.Normal
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(ColorProvider(Color(0xFFF7F4EF)))
-            .cornerRadius(16.dp)
-            .padding(12.dp),
+            .background(ColorProvider(Color(style.background)))
+            .cornerRadius(style.corners.dp)
+            .padding(style.padding.dp),
     ) {
-        Text(
-            text = "First Habits",
-            style = TextStyle(
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                color = ColorProvider(Color(0xFF1C1B1A)),
-            ),
-            modifier = GlanceModifier.clickable(
-                actionStartActivity(
-                    Intent(context, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    },
-                ),
-            ),
-        )
+        if (style.showTitle) {
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "First Habits",
+                    style = TextStyle(
+                        color = textColor,
+                        fontSize = style.fontSize.sp,
+                        fontWeight = weight,
+                    ),
+                    modifier = GlanceModifier.clickable(openApp(context)),
+                )
+                Spacer(modifier = GlanceModifier.width(12.dp))
+                Text(
+                    text = "Editar",
+                    style = TextStyle(
+                        color = ColorProvider(Color(style.text).copy(alpha = 0.55f)),
+                        fontSize = 11.sp,
+                    ),
+                    modifier = GlanceModifier.clickable(openListConfig(context, appWidgetId)),
+                )
+            }
+        }
         if (rows.isEmpty()) {
             Spacer(modifier = GlanceModifier.padding(top = 8.dp))
             Text(
-                text = "Nada para hoy",
-                style = TextStyle(
-                    fontSize = 14.sp,
-                    color = ColorProvider(Color(0xFF5C5854)),
-                ),
+                text = if (style.todayOnly) "Nada para hoy" else "No hay hábitos",
+                style = TextStyle(color = textColor, fontSize = style.fontSize.sp),
             )
         } else {
             rows.forEach { row ->
+                val nameColor = if (style.useHabitColor) ColorProvider(Color(row.color)) else textColor
                 Row(
                     modifier = GlanceModifier
                         .fillMaxWidth()
@@ -137,24 +170,60 @@ private fun TodayWidgetContent(context: Context, rows: List<app.firstyou.habits.
                         ),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = if (row.done) "●" else "○",
-                        style = TextStyle(
-                            color = ColorProvider(Color(row.color)),
-                            fontSize = 16.sp,
-                        ),
+                    val box = remember(row.done, row.color, densityDpi) {
+                        habitCheckBitmap(
+                            done = row.done,
+                            accent = row.color,
+                            sizePx = (22f * density).toInt().coerceAtLeast(1),
+                            densityDpi = densityDpi,
+                        )
+                    }
+                    Image(
+                        provider = ImageProvider(box),
+                        contentDescription = if (row.done) "Hecho" else "Pendiente",
+                        modifier = GlanceModifier.size(22.dp),
                     )
-                    Spacer(modifier = GlanceModifier.width(8.dp))
+                    Spacer(modifier = GlanceModifier.width(10.dp))
                     Text(
                         text = row.name,
                         maxLines = 1,
                         style = TextStyle(
-                            fontSize = 14.sp,
-                            color = ColorProvider(Color(0xFF1C1B1A)),
+                            color = nameColor,
+                            fontSize = style.fontSize.sp,
+                            fontWeight = weight,
                         ),
                     )
+                    val amount = row.mark.takeIf { it.any(Char::isDigit) }
+                    if (amount != null) {
+                        Spacer(modifier = GlanceModifier.width(8.dp))
+                        Text(
+                            text = amount,
+                            style = TextStyle(
+                                color = if (row.done) {
+                                    ColorProvider(Color(row.color))
+                                } else {
+                                    ColorProvider(Color(style.text).copy(alpha = 0.45f))
+                                },
+                                fontSize = (style.fontSize - 1).sp,
+                                fontWeight = weight,
+                            ),
+                        )
+                    }
                 }
             }
         }
     }
 }
+
+private fun openApp(context: Context) = actionStartActivity(
+    Intent(context, MainActivity::class.java).apply {
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    },
+)
+
+private fun openListConfig(context: Context, appWidgetId: Int) = actionStartActivity(
+    Intent(context, ListWidgetConfigActivity::class.java).apply {
+        putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    },
+)

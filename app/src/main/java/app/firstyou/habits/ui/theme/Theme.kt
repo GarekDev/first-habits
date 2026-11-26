@@ -1,58 +1,57 @@
 package app.firstyou.habits.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-)
+private val DarkBackground = Color(0xFF121212)
+private val DarkSurface = Color(0xFF1C1C1C)
+private val LightBackground = Color(0xFFF3F3F3)
+private val LightSurface = Color(0xFFFFFFFF)
 
 @Composable
 fun FirstHabitsTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
+    dark: Boolean,
+    accent: Color,
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    val onAccent = if (accent.luminance() > 0.62f) Color.Black else Color.White
+    val scheme = if (dark) {
+        darkColorScheme(
+            primary = accent,
+            onPrimary = onAccent,
+            secondary = accent,
+            background = DarkBackground,
+            onBackground = Color(0xFFF2F2F2),
+            surface = DarkSurface,
+            onSurface = Color(0xFFF2F2F2),
+            onSurfaceVariant = Color(0xFFC8C8C8),
+            surfaceContainer = Color(0xFF2A2A2A),
+            surfaceContainerLow = Color(0xFF242424),
+        )
+    } else {
+        lightColorScheme(
+            primary = accent,
+            onPrimary = onAccent,
+            secondary = accent,
+            background = LightBackground,
+            onBackground = Color(0xFF1C1B1A),
+            surface = LightSurface,
+            onSurface = Color(0xFF1C1B1A),
+            onSurfaceVariant = Color(0xFF5C5854),
+            surfaceContainer = Color(0xFFE7E7E7),
+            surfaceContainerLow = Color(0xFFEFEFEF),
+        )
     }
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = scheme,
         typography = Typography,
-        content = content
+        content = content,
     )
+}
+
+private fun Color.luminance(): Float {
+    return 0.299f * red + 0.587f * green + 0.114f * blue
 }

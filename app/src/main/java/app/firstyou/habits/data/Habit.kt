@@ -1,5 +1,17 @@
 package app.firstyou.habits.data
 
+enum class HabitKind(val storage: String) {
+    YES_NO("yes_no"),
+    MEASURABLE("measurable"),
+    ;
+
+    companion object {
+        fun fromStorage(value: String): HabitKind {
+            return entries.firstOrNull { it.storage == value } ?: YES_NO
+        }
+    }
+}
+
 data class Habit(
     val id: Long,
     val name: String,
@@ -8,10 +20,26 @@ data class Habit(
     val position: Int,
     val reminderMinutes: Int? = null,
     val archived: Boolean = false,
-)
+    val kind: HabitKind = HabitKind.YES_NO,
+    val unit: String? = null,
+    val target: Double? = null,
+) {
+    fun countsAsDone(value: Double?): Boolean {
+        if (value == null) return false
+        return when (kind) {
+            HabitKind.YES_NO -> value > 0.0
+            HabitKind.MEASURABLE -> value + 0.000001 >= (target ?: 1.0)
+        }
+    }
+}
 
 object HabitColors {
     val all = listOf(
+        0xFFD0BCFF.toInt(),
+        0xFFF48FB1.toInt(),
+        0xFF90CAF9.toInt(),
+        0xFF81C784.toInt(),
+        0xFFFFFFFF.toInt(),
         0xFF1F6B4A.toInt(),
         0xFF2F5D8C.toInt(),
         0xFF8C4A2F.toInt(),

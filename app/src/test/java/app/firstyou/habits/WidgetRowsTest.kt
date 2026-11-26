@@ -24,7 +24,7 @@ class WidgetRowsTest {
     @Test
     fun marksDoneAndStopsAtFive() {
         val habits = (1..6).map { habit(it.toLong(), "H$it", position = it) }
-        val done = mapOf(1L to setOf(monday))
+        val done = mapOf(1L to mapOf(monday to 1.0))
         val rows = widgetRows(habits, done, monday)
         assertEquals(listOf("H1", "H2", "H3", "H4", "H5"), rows.map { it.name })
         assertEquals(true, rows.first().done)

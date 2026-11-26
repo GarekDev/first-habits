@@ -3,6 +3,7 @@ package app.firstyou.habits.data.local
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import app.firstyou.habits.data.Habit
+import app.firstyou.habits.data.HabitKind
 
 @Entity(tableName = "habits")
 data class HabitEntity(
@@ -14,6 +15,9 @@ data class HabitEntity(
     val position: Int,
     val createdAt: Long,
     val reminderMinutes: Int? = null,
+    val kind: String = "yes_no",
+    val unit: String? = null,
+    val target: Double? = null,
 )
 
 fun HabitEntity.toModel() = Habit(
@@ -24,4 +28,7 @@ fun HabitEntity.toModel() = Habit(
     position = position,
     reminderMinutes = reminderMinutes,
     archived = archived,
+    kind = HabitKind.fromStorage(kind),
+    unit = unit,
+    target = target,
 )

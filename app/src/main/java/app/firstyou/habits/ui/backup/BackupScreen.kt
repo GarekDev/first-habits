@@ -25,6 +25,24 @@ import app.firstyou.habits.HabitsApp
 
 @Composable
 fun BackupScreen(onBack: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp, vertical = 24.dp),
+    ) {
+        TextButton(onClick = onBack) { Text("Volver") }
+        Text(
+            text = "Copia de seguridad",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(modifier = Modifier.size(12.dp))
+        BackupControls()
+    }
+}
+
+@Composable
+fun BackupControls() {
     val context = LocalContext.current
     val app = context.applicationContext as HabitsApp
     val viewModel: BackupViewModel = viewModel(
@@ -56,49 +74,36 @@ fun BackupScreen(onBack: () -> Unit) {
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+    Text(
+        text = "El archivo guarda todos los hábitos, los días marcados, las cantidades, los colores y los recordatorios. Una carpeta cómoda es Documentos o Descargas.",
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(modifier = Modifier.size(12.dp))
+    Button(
+        onClick = { exportFile.launch("first-habits-backup.json") },
+        enabled = !state.busy,
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        TextButton(onClick = onBack) { Text("Volver") }
+        Text("Exportar")
+    }
+    Spacer(modifier = Modifier.size(12.dp))
+    Button(
+        onClick = { importFile.launch(arrayOf("application/json", "*/*")) },
+        enabled = !state.busy,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text("Importar")
+    }
+    if (state.message != null) {
+        Spacer(modifier = Modifier.size(16.dp))
         Text(
-            text = "Copia de seguridad",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.SemiBold,
+            text = state.message!!,
+            color = if (state.error) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
         )
-        Spacer(modifier = Modifier.size(12.dp))
-        Text(
-            text = "El archivo guarda tus hábitos en el teléfono. Una carpeta cómoda es Documentos o Descargas.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.size(20.dp))
-        Button(
-            onClick = { exportFile.launch("first-habits-backup.json") },
-            enabled = !state.busy,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Exportar")
-        }
-        Spacer(modifier = Modifier.size(12.dp))
-        Button(
-            onClick = { importFile.launch(arrayOf("application/json", "*/*")) },
-            enabled = !state.busy,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Importar")
-        }
-        if (state.message != null) {
-            Spacer(modifier = Modifier.size(16.dp))
-            Text(
-                text = state.message!!,
-                color = if (state.error) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-            )
-        }
     }
 }

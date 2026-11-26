@@ -2,4 +2,11 @@
 <resources>
 
     <style name="Theme.FirstHabits" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.FirstHabits.WidgetConfig" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#121212</item>
+        <item name="android:textColor">#F2F2F2</item>
+        <item name="android:textColorPrimary">#F2F2F2</item>
+        <item name="android:textColorSecondary">#C8C8C8</item>
+    </style>
 </resources>

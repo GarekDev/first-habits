@@ -51,6 +51,8 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.androidx.datastore)
+    implementation(libs.androidx.compose.material.icons)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)

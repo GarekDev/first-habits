@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import app.firstyou.habits.data.HabitColors
+import app.firstyou.habits.data.HabitKind
 import app.firstyou.habits.data.HabitRepository
 import app.firstyou.habits.data.WeekDays
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,10 @@ data class EditHabitState(
     val color: Int = HabitColors.default,
     val days: Int = WeekDays.ALL,
     val reminderMinutes: Int? = null,
+    val kind: HabitKind = HabitKind.YES_NO,
+    val unit: String = "Minutos",
+    val targetText: String = "30",
+    val error: String? = null,
     val isNew: Boolean = true,
 )
 
@@ -45,6 +50,9 @@ class EditHabitViewModel(
                         color = habit.color,
                         days = habit.days,
                         reminderMinutes = habit.reminderMinutes,
+                        kind = habit.kind,
+                        unit = habit.unit ?: "Minutos",
+                        targetText = habit.target?.let(::formatTarget) ?: "30",
                         isNew = false,
                     )
                 }
@@ -68,10 +76,27 @@ class EditHabitViewModel(
         _state.update { it.copy(reminderMinutes = minutes) }
     }
 
+    fun onKind(kind: HabitKind) {
+        _state.update { it.copy(kind = kind, error = null) }
+    }
+
+    fun onUnit(value: String) {
+        _state.update { it.copy(unit = value, error = null) }
+    }
+
+    fun onTarget(value: String) {
+        _state.update { it.copy(targetText = value, error = null) }
+    }
+
     fun save(onDone: () -> Unit) {
         val current = _state.value
         if (current.saving || current.name.isBlank()) return
-        _state.update { it.copy(saving = true) }
+        val target = current.targetText.replace(',', '.').toDoubleOrNull()
+        if (current.kind == HabitKind.MEASURABLE && (current.unit.isBlank() || target == null || target <= 0.0)) {
+            _state.update { it.copy(error = "Escribe la unidad y una meta mayor que cero.") }
+            return
+        }
+        _state.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             repository.save(
                 id = if (current.isNew) null else habitId,
@@ -79,6 +104,9 @@ class EditHabitViewModel(
                 color = current.color,
                 days = current.days,
                 reminderMinutes = current.reminderMinutes,
+                kind = current.kind,
+                unit = current.unit,
+                target = target,
             )
             onDone()
         }
@@ -108,4 +136,8 @@ class EditHabitViewModel(
             }
         }
     }
+}
+
+private fun formatTarget(value: Double): String {
+    return if (value % 1.0 == 0.0) value.toInt().toString() else value.toString()
 }

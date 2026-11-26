@@ -14,6 +14,9 @@ interface CompletionDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(completion: CompletionEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(completion: CompletionEntity)
+
     @Query("DELETE FROM completions WHERE habitId = :habitId AND day = :day")
     suspend fun clear(habitId: Long, day: String)
 

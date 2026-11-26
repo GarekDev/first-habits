@@ -21,4 +21,5 @@ data class CompletionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val habitId: Long,
     val day: String,
+    val value: Double = 1.0,
 )

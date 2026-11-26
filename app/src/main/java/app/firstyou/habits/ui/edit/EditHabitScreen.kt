@@ -53,6 +53,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.firstyou.habits.HabitsApp
 import app.firstyou.habits.data.HabitColors
+import app.firstyou.habits.data.HabitKind
 import app.firstyou.habits.data.ReminderTime
 import app.firstyou.habits.data.WeekDays
 
@@ -117,6 +118,9 @@ fun EditHabitScreen(
             else -> EditHabitForm(
                 state = state,
                 onName = viewModel::onName,
+                onKind = viewModel::onKind,
+                onUnit = viewModel::onUnit,
+                onTarget = viewModel::onTarget,
                 onColor = viewModel::onColor,
                 onToggleDay = viewModel::onToggleDay,
                 onReminder = viewModel::onReminder,
@@ -151,6 +155,9 @@ fun EditHabitScreen(
 private fun EditHabitForm(
     state: EditHabitState,
     onName: (String) -> Unit,
+    onKind: (HabitKind) -> Unit,
+    onUnit: (String) -> Unit,
+    onTarget: (String) -> Unit,
     onColor: (Int) -> Unit,
     onToggleDay: (Int) -> Unit,
     onReminder: (Int?) -> Unit,
@@ -166,9 +173,49 @@ private fun EditHabitForm(
         modifier = Modifier.fillMaxWidth(),
     )
     Spacer(modifier = Modifier.size(20.dp))
+    Text(text = "Tipo", style = MaterialTheme.typography.titleMedium)
+    Spacer(modifier = Modifier.size(8.dp))
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FilterChip(
+            selected = state.kind == HabitKind.YES_NO,
+            onClick = { onKind(HabitKind.YES_NO) },
+            label = { Text("Sí/No") },
+        )
+        FilterChip(
+            selected = state.kind == HabitKind.MEASURABLE,
+            onClick = { onKind(HabitKind.MEASURABLE) },
+            label = { Text("Medible") },
+        )
+    }
+    if (state.kind == HabitKind.MEASURABLE) {
+        Spacer(modifier = Modifier.size(12.dp))
+        OutlinedTextField(
+            value = state.unit,
+            onValueChange = onUnit,
+            label = { Text("Unidad") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(modifier = Modifier.size(12.dp))
+        OutlinedTextField(
+            value = state.targetText,
+            onValueChange = onTarget,
+            label = { Text("Meta del día") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    if (state.error != null) {
+        Spacer(modifier = Modifier.size(8.dp))
+        Text(text = state.error, color = MaterialTheme.colorScheme.error)
+    }
+    Spacer(modifier = Modifier.size(20.dp))
     Text(text = "Color", style = MaterialTheme.typography.titleMedium)
     Spacer(modifier = Modifier.size(8.dp))
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
         HabitColors.all.forEach { color ->
             Surface(
                 modifier = Modifier
@@ -187,7 +234,10 @@ private fun EditHabitForm(
     Spacer(modifier = Modifier.size(20.dp))
     Text(text = "Días", style = MaterialTheme.typography.titleMedium)
     Spacer(modifier = Modifier.size(8.dp))
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         WeekDays.labels.forEachIndexed { index, label ->
             FilterChip(
                 selected = WeekDays.has(state.days, index),

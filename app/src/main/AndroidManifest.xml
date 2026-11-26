@@ -36,16 +36,35 @@
         <receiver
             android:name=".reminder.ReminderReceiver"
             android:exported="false" />
+        <activity
+            android:name=".widget.ListWidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.FirstHabits.WidgetConfig" />
+        <activity
+            android:name=".widget.ChartWidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.FirstHabits.WidgetConfig" />
         <receiver
             android:name=".widget.TodayWidgetReceiver"
             android:exported="true"
-            android:label="@string/app_name">
+            android:label="@string/widget_list_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/today_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.ChartWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_chart_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/chart_widget_info" />
         </receiver>
         <receiver
             android:name=".reminder.BootReceiver"

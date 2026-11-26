@@ -36,7 +36,7 @@ class BackupTest {
     fun rejectsAnotherVersionGarbageAndADayWithoutItsHabit() {
         val habit = BackupHabit(1, "Agua", 1, 127, 1, null, false, 10)
         val good = BackupFile(1, "2026-11-23T17:00:00", listOf(habit), emptyList())
-        assertNull(decodeBackup(encodeBackup(good.copy(version = 2))))
+        assertNull(decodeBackup(encodeBackup(good.copy(version = 3))))
         assertNull(decodeBackup("{"))
         assertNull(
             decodeBackup(

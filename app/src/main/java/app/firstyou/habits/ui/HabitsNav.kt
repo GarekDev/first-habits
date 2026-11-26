@@ -9,6 +9,7 @@ import app.firstyou.habits.ui.backup.BackupScreen
 import app.firstyou.habits.ui.detail.DetailScreen
 import app.firstyou.habits.ui.edit.EditHabitScreen
 import app.firstyou.habits.ui.help.ReminderHelpScreen
+import app.firstyou.habits.ui.settings.SettingsScreen
 import app.firstyou.habits.ui.today.TodayScreen
 
 @Composable
@@ -22,7 +23,11 @@ fun HabitsNav() {
                 onOpenArchived = { navController.navigate("archived") },
                 onOpenReminderHelp = { navController.navigate("reminder-help") },
                 onOpenBackup = { navController.navigate("backup") },
+                onOpenSettings = { navController.navigate("settings") },
             )
+        }
+        composable("settings") {
+            SettingsScreen(onBack = { navController.popBackStack() })
         }
         composable("backup") {
             BackupScreen(onBack = { navController.popBackStack() })

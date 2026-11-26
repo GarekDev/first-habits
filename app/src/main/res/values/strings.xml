@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">First Habits</string>
-    <string name="widget_description">Hábitos de hoy</string>
+    <string name="widget_list_label">Lista de hábitos</string>
+    <string name="widget_list_description">Marca los hábitos desde la pantalla principal.</string>
+    <string name="widget_chart_label">Gráfica de hábito</string>
+    <string name="widget_chart_description">La puntuación de un hábito.</string>
 </resources>

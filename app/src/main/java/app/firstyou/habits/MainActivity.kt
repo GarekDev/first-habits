@@ -8,8 +8,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.lifecycleScope
+import app.firstyou.habits.data.AppSettings
 import app.firstyou.habits.ui.HabitsNav
 import app.firstyou.habits.ui.theme.FirstHabitsTheme
 import app.firstyou.habits.widget.refreshTodayWidgets
@@ -20,7 +24,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            FirstHabitsTheme {
+            val app = application as HabitsApp
+            val dark by app.container.settings.dark.collectAsState(initial = true)
+            val accent by app.container.settings.accent.collectAsState(initial = AppSettings.DEFAULT_ACCENT)
+            FirstHabitsTheme(dark = dark, accent = Color(accent)) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
                         HabitsNav()

@@ -23,12 +23,16 @@ data class BackupHabit(
     val reminderMinutes: Int? = null,
     val archived: Boolean = false,
     val createdAt: Long,
+    val kind: String = HabitKind.YES_NO.storage,
+    val unit: String? = null,
+    val target: Double? = null,
 )
 
 @Serializable
 data class BackupDay(
     val habitId: Long,
     val day: String,
+    val value: Double = 1.0,
 )
 
 private val json = Json { prettyPrint = true }
@@ -41,7 +45,7 @@ fun decodeBackup(text: String): BackupFile? {
     } catch (_: Exception) {
         return null
     }
-    return parsed.takeIf { it.version == 1 && backupIsReadable(it) }
+    return parsed.takeIf { (it.version == 1 || it.version == 2) && backupIsReadable(it) }
 }
 
 fun backupIsReadable(file: BackupFile): Boolean {
@@ -66,8 +70,13 @@ fun backupIsReadable(file: BackupFile): Boolean {
 
 private fun habitIsReadable(habit: BackupHabit): Boolean {
     val minutes = habit.reminderMinutes
+    val measurable = habit.kind == HabitKind.MEASURABLE.storage
+    val targetOk = !measurable || ((habit.unit?.isNotBlank() == true) && (habit.target ?: 0.0) > 0.0)
+    val valueOk = habit.days != 0
     return habit.id > 0 &&
         habit.name.isNotBlank() &&
-        habit.days != 0 &&
-        (minutes == null || minutes in 0 until 24 * 60)
+        valueOk &&
+        targetOk &&
+        (minutes == null || minutes in 0 until 24 * 60) &&
+        (habit.kind == HabitKind.YES_NO.storage || measurable)
 }
